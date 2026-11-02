@@ -222,7 +222,7 @@ button,input{font:inherit;color:inherit;background:none;border:0}
           <button class="cb f" id="bFwd10" aria-label="Tiến 10 giây"><svg viewBox="0 0 24 24"><path d="M12 5V2l5 4-5 4V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/></svg><span class="n">10</span></button>
           <div class="side-r">
             <button class="cb txt f" id="bNext" aria-label="Tập sau">Tập sau<svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
-            <button class="cb txt f" id="bZoom" aria-label="Thu phóng màn hình"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg><span id="zLbl">Vừa khung</span></button>
+            <button class="cb txt f" id="bZoom" aria-label="Toàn màn hình"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg><span id="zLbl">Toàn màn hình</span></button>
             <button class="cb f" id="bPip" aria-label="Hình trong hình"><svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18z"/></svg></button>
           </div>
         </div>
@@ -759,8 +759,7 @@ function closeDetail() {
 
 /* ---------- Trình phát ---------- */
 const vid = $('#vid'), ui = $('#ui'), pwrap = $('#pwrap');
-let hls = null, hideT = null, zoom = 0, iframe = null;
-const ZOOMS = [['contain', 'Vừa khung'], ['cover', 'Lấp đầy'], ['fill', 'Kéo giãn']];
+let hls = null, hideT = null, iframe = null;
 const ICON_PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
 const fmt = s => {
@@ -816,7 +815,7 @@ function startEp(s, i) {
     pwrap.prepend(iframe);
     toast('Nguồn nhúng: không dùng được thanh tua');
   } else toast('Tập này chưa có nguồn phát');
-  applyZoom();
+  syncFull();
   syncPlay();
   showUI();
   pwrap.focus();
@@ -828,6 +827,7 @@ function teardown() {
 }
 function closePlayer() {
   savePos();
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   teardown();
   if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
   player.classList.remove('open');
@@ -844,7 +844,14 @@ function skip(d) {
   toast((d > 0 ? '+' : '−') + Math.abs(d) + ' giây');
   showUI();
 }
-function applyZoom() { vid.style.objectFit = ZOOMS[zoom][0]; $('#zLbl').textContent = ZOOMS[zoom][1]; }
+function toggleFull() {
+  if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; }
+  const el = player.requestFullscreen ? player : (player.webkitRequestFullscreen ? player : null);
+  if (!el) { toast('Trình duyệt không hỗ trợ toàn màn hình'); return; }
+  (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(() => toast('Không bật được toàn màn hình'));
+}
+function syncFull() { $('#zLbl').textContent = document.fullscreenElement ? 'Thoát toàn màn hình' : 'Toàn màn hình'; }
+document.addEventListener('fullscreenchange', syncFull);
 function paintSeek() {
   const d = vid.duration || 0, t = vid.currentTime || 0, p = d ? t / d * 100 : 0;
   $('#sCur').style.width = p + '%'; $('#sKnob').style.left = p + '%';
@@ -880,7 +887,7 @@ $('#bFwd10').onclick = () => skip(10);
 $('#bBack').onclick = closePlayer;
 $('#bPrev').onclick = () => startEp(srv, epIdx - 1);
 $('#bNext').onclick = () => startEp(srv, epIdx + 1);
-$('#bZoom').onclick = () => { zoom = (zoom + 1) % ZOOMS.length; applyZoom(); toast(ZOOMS[zoom][1]); };
+$('#bZoom').onclick = toggleFull;
 $('#bPip').onclick = async () => {
   try {
     if (document.pictureInPictureElement) await document.exitPictureInPicture();
@@ -890,7 +897,7 @@ $('#bPip').onclick = async () => {
 };
 pwrap.addEventListener('mousemove', showUI);
 pwrap.addEventListener('click', e => { if (e.target === pwrap || e.target === vid) { ui.classList.contains('hide') ? showUI() : toggle(); } });
-pwrap.addEventListener('dblclick', e => { if (e.target === vid) document.fullscreenElement ? document.exitFullscreen() : player.requestFullscreen?.(); });
+pwrap.addEventListener('dblclick', e => { if (e.target === vid) toggleFull(); });
 
 /* ---------- Điều hướng bằng phím (remote TV) ---------- */
 function scope() {
@@ -951,8 +958,7 @@ document.addEventListener('keydown', e => {
     }
     if (k === ' ' || k === 'k' || k === 'MediaPlayPause') { e.preventDefault(); toggle(); return; }
     if (k === 'Enter' && !onBtn) { e.preventDefault(); toggle(); return; }
-    if (k === 'f') { document.fullscreenElement ? document.exitFullscreen() : player.requestFullscreen?.(); return; }
-    if (k === 'z') { $('#bZoom').click(); return; }
+    if (k === 'f' || k === 'z') { toggleFull(); return; }
     if (k === 'p') { $('#bPip').click(); return; }
     if (k === 'n' && !$('#bNext').hidden) { $('#bNext').click(); return; }
     showUI();
