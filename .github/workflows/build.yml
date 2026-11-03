@@ -14,8 +14,7 @@ jobs:
           java-version: '17'
       - name: Chap nhan giay phep Android SDK
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-
-      - uses: gradle/actions/setupgradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
       - name: Tao du an Android tu cac file web
