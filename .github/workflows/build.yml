@@ -116,6 +116,7 @@ jobs:
           import android.view.View;
           import android.view.ViewGroup;
           import android.view.WindowManager;
+          import android.webkit.JavascriptInterface;
           import android.webkit.WebChromeClient;
           import android.webkit.WebResourceRequest;
           import android.webkit.WebResourceResponse;
@@ -126,6 +127,13 @@ jobs:
 
           import androidx.webkit.WebViewAssetLoader;
 
+          import java.io.ByteArrayInputStream;
+          import java.io.InputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.util.HashMap;
+          import java.util.Map;
+
           public class MainActivity extends Activity {
               private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
 
@@ -133,6 +141,49 @@ jobs:
               private WebView web;
               private View customView;
               private WebChromeClient.CustomViewCallback customCallback;
+              private volatile boolean liveMode = false;
+
+              /** Trang web báo cho app biết đang xem truyền hình trực tiếp. */
+              public class Bridge {
+                  @JavascriptInterface
+                  public void setLive(boolean on) { liveMode = on; }
+              }
+
+              /** Tải luồng trực tiếp bằng mạng của app và thêm quyền CORS, để kênh không bị trình duyệt chặn. */
+              private WebResourceResponse proxy(String u, WebResourceRequest req) {
+                  try {
+                      HttpURLConnection c = (HttpURLConnection) new URL(u).openConnection();
+                      c.setConnectTimeout(10000);
+                      c.setReadTimeout(20000);
+                      c.setInstanceFollowRedirects(true);
+                      c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36");
+                      String range = req.getRequestHeaders().get("Range");
+                      if (range != null) c.setRequestProperty("Range", range);
+                      int code = c.getResponseCode();
+                      if (code < 200 || code > 599 || (code >= 300 && code < 400)) return null;
+                      String mime = "application/octet-stream";
+                      String enc = null;
+                      String type = c.getContentType();
+                      if (type != null) {
+                          String[] parts = type.split(";");
+                          mime = parts[0].trim();
+                          for (String p : parts) {
+                              String t = p.trim();
+                              if (t.toLowerCase().startsWith("charset=")) enc = t.substring(8);
+                          }
+                      }
+                      if (u.toLowerCase().contains(".m3u8")) mime = "application/vnd.apple.mpegurl";
+                      Map<String, String> h = new HashMap<>();
+                      h.put("Access-Control-Allow-Origin", "*");
+                      InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
+                      if (in == null) in = new ByteArrayInputStream(new byte[0]);
+                      String reason = c.getResponseMessage();
+                      if (reason == null || reason.isEmpty()) reason = "OK";
+                      return new WebResourceResponse(mime, enc, code, reason, h, in);
+                  } catch (Exception e) {
+                      return null;
+                  }
+              }
 
               @Override
               protected void onCreate(Bundle state) {
@@ -151,6 +202,8 @@ jobs:
                           .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
                           .build();
 
+                  web.addJavascriptInterface(new Bridge(), "KKAndroid");
+
                   WebSettings s = web.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
@@ -161,7 +214,13 @@ jobs:
                   web.setWebViewClient(new WebViewClient() {
                       @Override
                       public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                          return loader.shouldInterceptRequest(request.getUrl());
+                          WebResourceResponse r = loader.shouldInterceptRequest(request.getUrl());
+                          if (r != null) return r;
+                          String u = request.getUrl().toString();
+                          if (liveMode && "GET".equalsIgnoreCase(request.getMethod()) && u.startsWith("https://")) {
+                              return proxy(u, request);
+                          }
+                          return null;
                       }
                   });
 
