@@ -708,6 +708,7 @@ function searchPage(my) {
 
 /* ---------- Truyền hình: nguồn IPTV, tab VTV / HTV / Địa phương ---------- */
 const TV_DEFAULT = { id: 'default', name: 'Kênh Việt Nam (iptv-org)', url: 'https://iptv-org.github.io/iptv/countries/vn.m3u', builtin: true };
+const SEED_URL = 'https://raw.githubusercontent.com/vuminhthanh12/vuminhthanh12/refs/heads/main/vmttv';
 const getSources = () => {
   let a = LS.get('kkp:tvsources', null);
   if (!Array.isArray(a)) {
@@ -715,6 +716,10 @@ const getSources = () => {
     const old = LS.get('kkp:tvsrc', '');
     if (old) a.push({ id: 's' + Date.now(), name: 'Danh sách của tôi', url: old, on: true });
     LS.set('kkp:tvsources', a);
+  }
+  if (!LS.get('kkp:tvseed1', false)) {
+    LS.set('kkp:tvseed1', true);
+    if (!a.some(x => x.url === SEED_URL)) { a.push({ id: 'seed1', name: 'Danh sách VMT TV', url: SEED_URL, on: true }); LS.set('kkp:tvsources', a); }
   }
   return a;
 };

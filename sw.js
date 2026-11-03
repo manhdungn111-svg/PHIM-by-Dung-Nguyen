@@ -1,4 +1,4 @@
-const CACHE = 'kkphim-tv-v8';
+const CACHE = 'kkphim-tv-v9';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo.png'];
 const LIBS = ['https://cdnjs.cloudflare.com/', 'https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 
