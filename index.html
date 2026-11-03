@@ -21,6 +21,7 @@
   --font:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 html{font-size:clamp(10px,.8334vw,24px);height:100%}
 body{height:100%;background:var(--bg);color:var(--fg);font-family:var(--font);overflow:hidden;-webkit-font-smoothing:antialiased}
 button,input{font:inherit;color:inherit;background:none;border:0}
@@ -178,6 +179,40 @@ button,input{font:inherit;color:inherit;background:none;border:0}
 .stat span{color:var(--mute);font-size:.95rem}
 .me-body .btn{margin-bottom:1rem}
 
+/* Truyền hình */
+.chip em{font-style:normal;opacity:.6;font-size:.85em;margin-left:.3rem;font-variant-numeric:tabular-nums}
+.srcpanel{background:var(--panel);border-radius:1.2rem;padding:1.5rem 1.8rem;margin-bottom:1.8rem;max-width:64rem}
+.srcpanel h2{font-size:1.4rem;margin-bottom:.4rem}
+.srcpanel h3{font-size:1.1rem;margin:1.4rem 0 .6rem;color:var(--mute)}
+.srow{display:flex;align-items:center;gap:1rem;padding:.8rem 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.srow .si{flex:1;min-width:0}
+.srow b{display:block;font-size:1.05rem}
+.srow small{display:block;color:var(--mute);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sst{color:var(--mute);font-size:.9rem;white-space:nowrap}
+.sst.bad{color:#ff8a80}
+.sbtn{height:2.8rem;padding:0 1.2rem;border-radius:1.4rem;background:var(--panel2);font-weight:600;font-size:.95rem;transition:.15s}
+.sbtn.danger{color:#ff8a80}
+.sbtn:focus{background:var(--fg);color:#10131c;transform:scale(1.06)}
+.addf{display:flex;flex-direction:column;gap:.8rem;max-width:44rem}
+.fld{height:3.4rem;padding:0 1.3rem;border-radius:1.7rem;background:var(--panel2);color:var(--fg);outline:none;font-size:1.05rem;border:0}
+.fld:focus{box-shadow:0 0 0 .22rem var(--ring)}
+select.fld{appearance:none;-webkit-appearance:none}
+
+.tv-top{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.4rem}
+.tv-src{display:flex;flex-direction:column;gap:.8rem;max-width:46rem;margin-bottom:1.4rem}
+.tv-src input{height:3.6rem;padding:0 1.4rem;border-radius:1.8rem;background:var(--panel2);color:var(--fg);outline:none;font-size:1.1rem}
+.tv-src input:focus{box-shadow:0 0 0 .22rem var(--ring)}
+.tvgrid{grid-template-columns:repeat(auto-fill,minmax(16rem,1fr))}
+.chc{display:block;text-align:left;border-radius:.9rem;transition:transform .12s;position:relative}
+.chl{position:relative;aspect-ratio:16/10;border-radius:.9rem;background:var(--panel2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.chl img{position:relative;z-index:1;max-width:72%;max-height:72%;object-fit:contain}
+.chn{position:absolute;font-weight:800;font-size:2.4rem;color:rgba(255,255,255,.16)}
+.live-b{position:absolute;z-index:2;left:.5rem;top:.5rem;padding:.12rem .5rem;border-radius:.3rem;background:var(--accent);font-size:.75rem;font-weight:800;font-style:normal;letter-spacing:.03em}
+.chc .t{margin-top:.6rem;font-size:1rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chc .o{font-size:.85rem;color:var(--mute)}
+.chc:focus{transform:scale(1.07);z-index:5}
+.chc:focus .chl{box-shadow:0 0 0 .28rem var(--ring)}
+.islive .seekrow,.islive #bBack10,.islive #bFwd10{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -186,6 +221,7 @@ button,input{font:inherit;color:inherit;background:none;border:0}
 <nav id="side" aria-label="Menu">
   <div class="logo"><img src="logo.png" alt="Phim by Dung Nguyen"></div>
   <button class="nav f" data-go="me"><b class="av guest" id="navAv">K</b><span>Cá nhân</span></button>
+  <button class="nav f" data-go="tv"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 2l4 4 4-4M9 22h6"/></svg><span>Truyền hình</span></button>
   <button class="nav f" data-go="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Tìm kiếm</span></button>
   <button class="nav f on" data-go="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Trang chủ</span></button>
   <button class="nav f" data-go="phim-le"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg><span>Phim lẻ</span></button>
@@ -216,13 +252,13 @@ button,input{font:inherit;color:inherit;background:none;border:0}
         </div>
         <div class="ctrls">
           <div class="side-l">
-            <button class="cb txt f" id="bPrev" aria-label="Tập trước"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>Tập trước</button>
+            <button class="cb txt f" id="bPrev" aria-label="Tập trước"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg><span id="pvT">Tập trước</span></button>
           </div>
           <button class="cb f" id="bBack10" aria-label="Lùi 10 giây"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg><span class="n">10</span></button>
           <button class="cb big f" id="bPlay" aria-label="Phát / Tạm dừng"></button>
           <button class="cb f" id="bFwd10" aria-label="Tiến 10 giây"><svg viewBox="0 0 24 24"><path d="M12 5V2l5 4-5 4V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/></svg><span class="n">10</span></button>
           <div class="side-r">
-            <button class="cb txt f" id="bNext" aria-label="Tập sau">Tập sau<svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
+            <button class="cb txt f" id="bNext" aria-label="Tập sau"><span id="nxT">Tập sau</span><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
             <button class="cb txt f" id="bZoom" aria-label="Toàn màn hình"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg><span id="zLbl">Toàn màn hình</span></button>
             <button class="cb f" id="bPip" aria-label="Hình trong hình"><svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18z"/></svg></button>
           </div>
@@ -319,6 +355,7 @@ async function go(k, arg) {
   if (k === 'the-loai') return genrePage(arg, my);
   if (k === 'search') return searchPage(my);
   if (k === 'me') return profilePage(arg, my);
+  if (k === 'tv') return tvPage(my, arg);
 }
 
 /* ---------- Tài khoản, yêu thích, xem sau, sao lưu (lưu trên thiết bị) ---------- */
@@ -669,6 +706,186 @@ function searchPage(my) {
   q.focus();
 }
 
+/* ---------- Truyền hình: nguồn IPTV, tab VTV / HTV / Địa phương ---------- */
+const TV_DEFAULT = { id: 'default', name: 'Kênh Việt Nam (iptv-org)', url: 'https://iptv-org.github.io/iptv/countries/vn.m3u', builtin: true };
+const getSources = () => {
+  let a = LS.get('kkp:tvsources', null);
+  if (!Array.isArray(a)) {
+    a = [];
+    const old = LS.get('kkp:tvsrc', '');
+    if (old) a.push({ id: 's' + Date.now(), name: 'Danh sách của tôi', url: old, on: true });
+    LS.set('kkp:tvsources', a);
+  }
+  return a;
+};
+const getCustom = () => { const v = LS.get('kkp:tvcustom', []); return Array.isArray(v) ? v : []; };
+const allSources = () => [{ ...TV_DEFAULT, on: !LS.get('kkp:tvdef_off', false) }, ...getSources()];
+const BUILTIN_CH = [{ name: 'Kênh thử nghiệm (Big Buck Bunny)', group: 'Thử nghiệm', logo: '', kind: 'other', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' }];
+const srcCache = new Map();
+const TV_TABS = [['all', 'Danh sách kênh'], ['vtv', 'VTV'], ['htv', 'HTV'], ['local', 'Địa phương']];
+let tvTab = 'all';
+
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase();
+const LOCAL_RE = new RegExp('\\b(' + ['thvl', 'vinh long', 'can tho', 'ha noi', 'hntv', 'da nang', 'drt', 'hue', 'trt', 'quang ninh', 'qtv', 'quang binh', 'quang tri', 'quang nam', 'quang ngai', 'nghe an', 'thanh hoa', 'binh duong', 'btv', 'dong nai', 'dnrt', 'long an', 'tien giang', 'ben tre', 'ca mau', 'an giang', 'hai phong', 'lam dong', 'dak lak', 'dak nong', 'gia lai', 'khanh hoa', 'phu yen', 'binh dinh', 'nam dinh', 'thai binh', 'hai duong', 'lang son', 'son la', 'lao cai', 'yen bai', 'tay ninh', 'ba ria', 'vung tau', 'soc trang', 'bac lieu', 'kien giang', 'dong thap', 'tra vinh', 'hau giang', 'vinh phuc', 'phu tho', 'ninh binh', 'ha tinh', 'kon tum', 'binh phuoc', 'binh thuan', 'ninh thuan', 'cao bang', 'ha giang', 'tuyen quang', 'thai nguyen', 'dien bien', 'hoa binh', 'hung yen', 'ha nam', 'bac ninh', 'bac giang', 'phu quoc', 'dia phuong', 'local'].join('|') + ')\\b');
+function kindOf(ch) {
+  if (ch.kind) return ch.kind;
+  const n = norm(ch.name);
+  if (/\bvtv/.test(n)) return 'vtv';
+  if (/\bhtv/.test(n)) return 'htv';
+  if (LOCAL_RE.test(n) || LOCAL_RE.test(norm(ch.group))) return 'local';
+  return 'other';
+}
+function parseM3U(t) {
+  const out = [];
+  let cur = null;
+  for (const raw of String(t).split(/\r?\n/)) {
+    const l = raw.trim();
+    if (l.startsWith('#EXTINF')) {
+      const g = (l.match(/group-title="([^"]*)"/) || [])[1] || '';
+      const logo = (l.match(/tvg-logo="([^"]*)"/) || [])[1] || '';
+      cur = { name: l.slice(l.lastIndexOf(',') + 1).trim() || 'Kênh', group: g.split(';')[0].trim(), logo };
+    } else if (l && !l.startsWith('#') && cur) {
+      if (/^https:\/\//i.test(l)) { cur.url = l; out.push(cur); }
+      cur = null;
+    }
+  }
+  return out;
+}
+async function loadSource(s, force) {
+  if (!force && srcCache.has(s.url)) return srcCache.get(s.url);
+  const r = await fetch(s.url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const t = await r.text();
+  let list = [];
+  if (t.includes('#EXTINF')) list = parseM3U(t);
+  else if (t.includes('#EXT-X-')) list = [{ name: s.name, group: '', logo: '', url: s.url }];
+  srcCache.set(s.url, list);
+  return list;
+}
+async function loadAllChannels(force) {
+  const srcs = allSources().filter(s => s.on);
+  const status = {};
+  const parts = await Promise.all(srcs.map(async s => {
+    try { const l = await loadSource(s, force); status[s.id] = { n: l.length }; return l; }
+    catch (e) { status[s.id] = { err: true }; return []; }
+  }));
+  const seen = new Set();
+  const list = [...BUILTIN_CH, ...getCustom().map(c => ({ ...c, custom: true })), ...parts.flat()].filter(c => c.url && !seen.has(c.url) && seen.add(c.url));
+  return { list, status };
+}
+function chCard(ch, list) {
+  const b = document.createElement('button');
+  b.className = 'chc f';
+  b.innerHTML = `<div class="chl">${ch.logo ? `<img src="${esc(ch.logo)}" loading="lazy" decoding="async" alt="" onerror="this.remove()">` : ''}<span class="chn">${esc(ch.name.slice(0, 2).toUpperCase())}</span><i class="live-b">TRỰC TIẾP</i></div><div class="t">${esc(ch.name)}</div>${ch.group ? `<div class="o">${esc(ch.group)}</div>` : ''}`;
+  b.onclick = () => { liveFocus = b; startLive(list, list.indexOf(ch)); };
+  return b;
+}
+const isHttps = u => /^https:\/\/[^\s]+$/i.test(u);
+
+async function tvPage(my, arg) {
+  const wrap = document.createElement('div');
+  wrap.className = 'page';
+  wrap.innerHTML = `<h1>Truyền hình</h1>
+    <div class="chips" id="tvTabs" role="tablist"></div>
+    <div class="tv-top">
+      <label class="searchbox" style="margin:0;flex:1;max-width:34rem"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="tq" class="f" type="search" placeholder="Tìm kênh..." autocomplete="off"></label>
+      <button class="btn f" id="tvSrcBtn" style="margin:0">Nguồn IPTV</button>
+    </div>
+    <section class="srcpanel" id="srcPanel" hidden></section>
+    <div class="grid tvgrid" id="tvGrid"></div>
+    <div class="msg" id="tvMsg">Đang tải danh sách kênh...</div>`;
+  main.append(wrap);
+  const $w = s => $(s, wrap);
+  const grid = $w('#tvGrid'), msg = $w('#tvMsg'), tabs = $w('#tvTabs'), q = $w('#tq'), panel = $w('#srcPanel');
+  const reopen = () => go('tv', 'src');
+  $w('#tvSrcBtn').onclick = () => { panel.hidden = !panel.hidden; if (!panel.hidden) { const f = $('.f', panel); f && f.focus(); } };
+
+  let data = { list: [], status: {} };
+  const renderPanel = () => {
+    const srcs = allSources();
+    const custom = getCustom();
+    panel.innerHTML = `<h2>Nguồn IPTV</h2>
+      <div id="srcRows">${srcs.map(s => {
+        const st = data.status[s.id];
+        const info = !s.on ? 'Đang tắt' : st ? (st.err ? 'Không tải được' : st.n + ' kênh') : 'Đang tải...';
+        return `<div class="srow"><div class="si"><b>${esc(s.name)}</b><small>${esc(s.url)}</small></div><span class="sst${st && st.err && s.on ? ' bad' : ''}">${info}</span><button class="sbtn f" data-act="toggle" data-id="${esc(s.id)}">${s.on ? 'Tắt' : 'Bật'}</button>${s.builtin ? '' : `<button class="sbtn danger f" data-act="del" data-id="${esc(s.id)}">Xóa</button>`}</div>`;
+      }).join('')}</div>
+      ${custom.length ? `<h3>Kênh tự thêm</h3>${custom.map((c, i) => `<div class="srow"><div class="si"><b>${esc(c.name)}</b><small>${esc(c.url)}</small></div><button class="sbtn danger f" data-act="delch" data-i="${i}">Xóa</button></div>`).join('')}` : ''}
+      <h3>Thêm mới</h3>
+      <div class="chips" id="addMode"><button class="chip f on" data-m="m3u">Danh sách M3U</button><button class="chip f" data-m="ch">Kênh lẻ</button></div>
+      <form class="addf" id="fM3u"><input class="fld f" id="mName" placeholder="Tên nguồn (không bắt buộc)"><input class="fld f" id="mUrl" type="url" placeholder="https://.../danhsach.m3u"><div class="err" id="mErr" role="alert"></div><button class="btn pri f" type="submit" style="margin:0;align-self:flex-start">Thêm nguồn</button></form>
+      <form class="addf" id="fCh" hidden><input class="fld f" id="cName" placeholder="Tên kênh, ví dụ VTV1"><input class="fld f" id="cUrl" type="url" placeholder="Link phát https://.../index.m3u8"><input class="fld f" id="cLogo" type="url" placeholder="Link logo (không bắt buộc)"><select class="fld f" id="cKind"><option value="">Mục: tự nhận diện</option><option value="vtv">VTV</option><option value="htv">HTV</option><option value="local">Địa phương</option><option value="other">Khác</option></select><div class="err" id="cErr" role="alert"></div><button class="btn pri f" type="submit" style="margin:0;align-self:flex-start">Thêm kênh</button></form>
+      <p class="note" style="margin:1rem 0 0;font-size:.95rem">Chỉ nhận link https. Một số kênh có thể không phát được trên một số thiết bị.</p>`;
+    $$('[data-act]', panel).forEach(b => b.onclick = () => {
+      const a = b.dataset.act;
+      if (a === 'toggle') {
+        if (b.dataset.id === 'default') LS.set('kkp:tvdef_off', !LS.get('kkp:tvdef_off', false));
+        else LS.set('kkp:tvsources', getSources().map(s => s.id === b.dataset.id ? { ...s, on: !s.on } : s));
+      } else if (a === 'del') LS.set('kkp:tvsources', getSources().filter(s => s.id !== b.dataset.id));
+      else if (a === 'delch') LS.set('kkp:tvcustom', getCustom().filter((_, i) => i !== +b.dataset.i));
+      reopen();
+    });
+    $$('#addMode .chip', panel).forEach(c => c.onclick = () => {
+      $$('#addMode .chip', panel).forEach(x => x.classList.toggle('on', x === c));
+      $('#fM3u', panel).hidden = c.dataset.m !== 'm3u';
+      $('#fCh', panel).hidden = c.dataset.m !== 'ch';
+    });
+    $('#fM3u', panel).onsubmit = e => {
+      e.preventDefault();
+      const url = $('#mUrl', panel).value.trim(), name = $('#mName', panel).value.trim();
+      if (!isHttps(url)) { $('#mErr', panel).textContent = 'Link phải bắt đầu bằng https://'; return; }
+      if (allSources().some(s => s.url === url)) { $('#mErr', panel).textContent = 'Nguồn này đã có trong danh sách.'; return; }
+      LS.set('kkp:tvsources', [...getSources(), { id: 's' + Date.now(), name: name || 'Danh sách ' + (getSources().length + 1), url, on: true }]);
+      reopen();
+    };
+    $('#fCh', panel).onsubmit = e => {
+      e.preventDefault();
+      const name = $('#cName', panel).value.trim(), url = $('#cUrl', panel).value.trim(), logo = $('#cLogo', panel).value.trim();
+      const err = $('#cErr', panel);
+      if (!name) { err.textContent = 'Hãy nhập tên kênh.'; return; }
+      if (!isHttps(url)) { err.textContent = 'Link phát phải bắt đầu bằng https://'; return; }
+      if (logo && !isHttps(logo)) { err.textContent = 'Link logo phải bắt đầu bằng https://'; return; }
+      LS.set('kkp:tvcustom', [...getCustom(), { name, url, logo, group: '', kind: $('#cKind', panel).value }]);
+      reopen();
+    };
+  };
+
+  const counts = () => {
+    const c = { all: data.list.length, vtv: 0, htv: 0, local: 0 };
+    data.list.forEach(ch => { const k = kindOf(ch); if (c[k] !== undefined) c[k]++; });
+    return c;
+  };
+  const view = () => {
+    const kw = norm(q.value.trim());
+    const shown = data.list.filter(c => (tvTab === 'all' || kindOf(c) === tvTab) && (!kw || norm(c.name).includes(kw)));
+    grid.innerHTML = '';
+    shown.forEach(c => grid.append(chCard(c, shown)));
+    msg.textContent = shown.length ? '' : (data.list.length ? 'Không có kênh trong mục này.' : 'Chưa có kênh nào. Bấm "Nguồn IPTV" để thêm danh sách hoặc kênh lẻ.');
+  };
+  const renderTabs = () => {
+    const c = counts();
+    tabs.innerHTML = '';
+    TV_TABS.forEach(([k, t]) => {
+      const b = document.createElement('button');
+      b.className = 'chip f' + (k === tvTab ? ' on' : '');
+      b.setAttribute('role', 'tab');
+      b.innerHTML = `${esc(t)} <em>${c[k]}</em>`;
+      b.onclick = () => { tvTab = k; $$('.chip', tabs).forEach(x => x.classList.toggle('on', x === b)); view(); };
+      tabs.append(b);
+    });
+  };
+  q.addEventListener('input', view);
+
+  renderPanel();
+  if (arg === 'src') panel.hidden = false;
+  try { data = await loadAllChannels(false); }
+  catch (e) { data = { list: [], status: {} }; }
+  if (my !== token) return;
+  renderTabs(); renderPanel(); view();
+  if (arg === 'src') { panel.hidden = false; const f = $('.f', panel); f && f.focus(); }
+  else { const first = $('.chc', grid) || $('.chip.on', tabs); first && first.focus({ preventScroll: true }); }
+}
+
 $$('.nav').forEach(n => n.onclick = () => go(n.dataset.go));
 
 /* ---------- Chi tiết phim ---------- */
@@ -770,8 +987,9 @@ const fmt = s => {
   return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0');
 };
 function loadPos() { return getPos()[movie.slug] || null; }
+let live = null, liveFocus = null;
 function savePos() {
-  if (!movie || !vid.duration) return;
+  if (live || !movie || !vid.duration) return;
   const pos = getPos();
   pos[movie.slug] = { srv, ep: epIdx, t: vid.currentTime };
   LS.set(ukey('pos'), pos);
@@ -787,6 +1005,8 @@ function showUI() {
   hideT = setTimeout(() => { if (!vid.paused) { ui.classList.add('hide'); pwrap.focus(); } }, 4000);
 }
 function startEp(s, i) {
+  live = null; player.classList.remove('islive');
+  $('#pvT').textContent = 'Tập trước'; $('#nxT').textContent = 'Tập sau';
   const e = servers[s] && servers[s].server_data[i];
   if (!e) return;
   srv = s; epIdx = i;
@@ -826,12 +1046,38 @@ function teardown() {
   if (iframe) { iframe.remove(); iframe = null; }
   vid.pause(); vid.removeAttribute('src'); vid.load();
 }
+function startLive(list, i) {
+  const ch = list[i];
+  if (!ch) return;
+  live = { list, idx: i };
+  player.classList.add('open', 'islive');
+  $('#pTitle').textContent = ch.name;
+  $('#pSub').textContent = 'Trực tiếp' + (ch.group ? ' · ' + ch.group : '');
+  $('#bPrev').hidden = false; $('#bNext').hidden = false;
+  $('#pvT').textContent = 'Kênh trước'; $('#nxT').textContent = 'Kênh sau';
+  teardown();
+  vid.hidden = false;
+  $('#spin').classList.add('on');
+  if (window.Hls && Hls.isSupported()) {
+    hls = new Hls({ liveSyncDurationCount: 3 });
+    hls.loadSource(ch.url); hls.attachMedia(vid);
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { $('#spin').classList.remove('on'); toast('Kênh này không phát được. Thử kênh khác'); } });
+  } else vid.src = ch.url;
+  vid.play().catch(() => {});
+  syncFull(); syncPlay(); showUI();
+  pwrap.focus();
+}
 function closePlayer() {
   savePos();
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   teardown();
   if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
   player.classList.remove('open');
+  if (live) {
+    const f = liveFocus; live = null; player.classList.remove('islive');
+    if (f && document.contains(f)) f.focus();
+    return;
+  }
   if (detail.classList.contains('open')) {
     $('#dPlay') && ($('#dPlay').textContent = 'Xem tiếp');
     $('#dPlay') && $('#dPlay').focus();
@@ -840,7 +1086,7 @@ function closePlayer() {
 function syncPlay() { $('#bPlay').innerHTML = vid.paused ? ICON_PLAY : ICON_PAUSE; }
 function toggle() { vid.paused ? vid.play().catch(() => {}) : vid.pause(); }
 function skip(d) {
-  if (!vid.duration) return;
+  if (live || !vid.duration) return;
   vid.currentTime = Math.min(vid.duration, Math.max(0, vid.currentTime + d));
   toast((d > 0 ? '+' : '−') + Math.abs(d) + ' giây');
   showUI();
@@ -871,6 +1117,7 @@ vid.addEventListener('pause', () => { syncPlay(); showUI(); });
 vid.addEventListener('waiting', () => $('#spin').classList.add('on'));
 ['playing', 'canplay'].forEach(ev => vid.addEventListener(ev, () => $('#spin').classList.remove('on')));
 vid.addEventListener('ended', () => {
+  if (live) return;
   const n = servers[srv].server_data.length;
   if (epIdx < n - 1) startEp(srv, epIdx + 1);
   else { const pos = getPos(); delete pos[movie.slug]; LS.set(ukey('pos'), pos); closePlayer(); }
@@ -878,6 +1125,7 @@ vid.addEventListener('ended', () => {
 setInterval(() => { if (player.classList.contains('open') && !vid.paused) savePos(); }, 5000);
 
 $('#seek').addEventListener('click', e => {
+  if (live) return;
   const r = e.currentTarget.getBoundingClientRect();
   if (vid.duration) vid.currentTime = (e.clientX - r.left) / r.width * vid.duration;
   showUI();
@@ -886,8 +1134,8 @@ $('#bPlay').onclick = toggle;
 $('#bBack10').onclick = () => skip(-10);
 $('#bFwd10').onclick = () => skip(10);
 $('#bBack').onclick = closePlayer;
-$('#bPrev').onclick = () => startEp(srv, epIdx - 1);
-$('#bNext').onclick = () => startEp(srv, epIdx + 1);
+$('#bPrev').onclick = () => live ? startLive(live.list, (live.idx - 1 + live.list.length) % live.list.length) : startEp(srv, epIdx - 1);
+$('#bNext').onclick = () => live ? startLive(live.list, (live.idx + 1) % live.list.length) : startEp(srv, epIdx + 1);
 $('#bZoom').onclick = toggleFull;
 $('#bPip').onclick = async () => {
   try {
