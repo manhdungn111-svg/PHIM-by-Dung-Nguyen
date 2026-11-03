@@ -28,24 +28,24 @@ button,input{font:inherit;color:inherit;background:none;border:0}
 .f:focus-visible,.f:focus{outline:none}
 
 /* Sidebar */
-#side{position:fixed;left:0;top:0;bottom:0;width:7.5rem;z-index:20;display:flex;flex-direction:column;justify-content:center;gap:.6rem;padding:1rem .7rem;background:linear-gradient(90deg,#06070c 60%,rgba(6,7,12,0));transition:width .25s}
+#side{position:fixed;left:0;top:0;bottom:0;width:7.5rem;z-index:20;display:flex;flex-direction:column;justify-content:center;gap:.6rem;padding:1rem .7rem;background:linear-gradient(90deg,#06070c 60%,rgba(6,7,12,0))}
 #side:focus-within{width:13rem}
 .logo{position:absolute;top:1.4rem;left:0;right:0;display:flex;justify-content:center}
 .logo img{width:5.8rem;height:auto;display:block}
 .nav{display:flex;align-items:center;gap:1rem;height:3.6rem;padding:0 1.2rem;border-radius:1.8rem;color:var(--mute);font-weight:600;font-size:1.1rem;white-space:nowrap;overflow:hidden;transition:background .15s,color .15s}
 .nav svg{width:1.6rem;height:1.6rem;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.nav span{opacity:0;transition:opacity .2s}
-#side:focus-within .nav span{opacity:1}
+.nav span{display:none}
+#side:focus-within .nav span{display:inline}
 .nav.on{color:var(--fg)}
 .nav.on svg{color:var(--accent)}
 .nav:focus{background:var(--fg);color:#10131c}
 .nav:focus svg{color:var(--accent)}
 
 /* Main */
-#main{position:absolute;left:7.5rem;right:0;top:0;bottom:0;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;padding-bottom:4rem}
+#main{position:absolute;left:7.5rem;right:0;top:0;bottom:0;overflow-y:auto;overflow-x:hidden;padding-bottom:4rem}
 #main::-webkit-scrollbar{display:none}
 .hero{position:relative;height:46rem;display:flex;align-items:flex-end;padding:0 4rem 4rem 3rem;overflow:hidden}
-.hero .bg{position:absolute;inset:0;background-size:cover;background-position:center 20%;transition:opacity .6s}
+.hero .bg{position:absolute;inset:0;background-size:cover;background-position:center 20%}
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--bg) 8%,rgba(10,12,19,.55) 48%,rgba(10,12,19,0) 80%),linear-gradient(0deg,var(--bg) 2%,rgba(10,12,19,0) 45%)}
 .hero .info{position:relative;z-index:2;max-width:46rem}
 .tags{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem}
@@ -65,16 +65,17 @@ button,input{font:inherit;color:inherit;background:none;border:0}
 
 .row{padding:0 0 .6rem 3rem}
 .row h2{font-size:1.6rem;font-weight:700;margin:1.2rem 0 .3rem}
-.track{display:flex;gap:1.3rem;overflow-x:auto;padding:1.3rem 3rem 1.6rem 0;scroll-behavior:smooth;scrollbar-width:none}
+.track{display:flex;gap:1.3rem;overflow-x:auto;padding:1.3rem 3rem 1.6rem 0;scrollbar-width:none}
 .track::-webkit-scrollbar{display:none}
-.card{flex:none;width:14rem;position:relative;border-radius:.9rem;transition:transform .18s,box-shadow .18s}
+.card{flex:none;width:14rem;position:relative;border-radius:.9rem;transition:transform .12s}
 .card .pic{aspect-ratio:2/3;border-radius:.9rem;background:var(--panel2) center/cover no-repeat;overflow:hidden;position:relative}
 .card .badge{position:absolute;left:.5rem;top:.5rem;padding:.15rem .5rem;border-radius:.3rem;background:var(--accent);font-size:.8rem;font-weight:700}
 .card .ep{position:absolute;right:0;bottom:0;left:0;padding:1.4rem .6rem .5rem;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);font-size:.85rem;font-weight:600}
 .card .t{margin-top:.6rem;font-size:1rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .o{font-size:.85rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card:focus{transform:scale(1.1);z-index:5}
-.card:focus .pic{box-shadow:0 0 0 .28rem var(--ring),0 1.2rem 2.4rem rgba(0,0,0,.6)}
+.card:focus{transform:scale(1.08);z-index:5}
+.card:focus .pic{box-shadow:0 0 0 .28rem var(--ring)}
+.card .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 
 /* Trang danh sách */
 .page{padding:3rem 3rem 2rem}
@@ -269,7 +270,7 @@ function card(m) {
   b.className = 'card f';
   b.dataset.slug = m.slug;
   const poster = img(m.thumb_url || m.poster_url);
-  b.innerHTML = `<div class="pic" style="background-image:url('${esc(poster)}')">
+  b.innerHTML = `<div class="pic"><img src="${esc(poster)}" loading="lazy" decoding="async" alt="" onerror="this.remove()">
       ${m.quality ? `<span class="badge">${esc(m.quality)}</span>` : ''}
       ${m.episode_current ? `<div class="ep">${esc(m.episode_current)}</div>` : ''}
     </div>
@@ -571,7 +572,7 @@ function buildHero(el, items) {
     dots.innerHTML = items.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
   };
   show(0);
-  heroTimer = setInterval(() => { if (!document.activeElement.closest('.hero')) show(i + 1); }, 8000);
+  heroTimer = setInterval(() => { if (!document.activeElement.closest('.hero')) show(i + 1); }, 15000);
 }
 
 async function gridPage(title, fetcher, my, extraTop) {
@@ -914,19 +915,25 @@ function focusables(sc) {
   });
 }
 function focusFirst(root) { const el = $('.card.f, .btn.f, .chip.f', root); el && el.focus({ preventScroll: true }); }
+let kbNav = false;
 function nearest(dir) {
   const cur = document.activeElement;
   const sc = scope();
   const all = focusables(sc);
   if (!cur || !all.includes(cur)) { all[0] && all[0].focus(); return; }
+  const curSide = !!cur.closest('#side');
   const a = cur.getBoundingClientRect();
   const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
   let best = null, bs = Infinity;
   for (const el of all) {
     if (el === cur) continue;
+    const inSide = !!el.closest('#side');
+    if (!curSide && inSide && dir !== 'left') continue;
+    if (curSide && !inSide && dir !== 'right') continue;
     const b = el.getBoundingClientRect();
     const bx = b.left + b.width / 2, by = b.top + b.height / 2;
     const dx = bx - ax, dy = by - ay;
+    if ((dir === 'left' || dir === 'right') ? Math.abs(dy) > a.height * 1.2 : Math.abs(dy) > innerHeight * 2) continue;
     let p, q;
     if (dir === 'left') { if (b.right > a.left + 4 && dx >= -2) continue; if (dx >= 0) continue; p = -dx; q = Math.abs(dy); }
     if (dir === 'right') { if (dx <= 0) continue; p = dx; q = Math.abs(dy); }
@@ -936,8 +943,9 @@ function nearest(dir) {
     if (score < bs) { bs = score; best = el; }
   }
   if (best) {
+    kbNav = true;
     best.focus({ preventScroll: true });
-    best.scrollIntoView({ block: dir === 'up' || dir === 'down' ? 'center' : 'nearest', inline: 'center', behavior: 'smooth' });
+    best.scrollIntoView({ block: dir === 'up' || dir === 'down' ? 'center' : 'nearest', inline: 'center', behavior: 'auto' });
   }
 }
 const DIRS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
@@ -972,7 +980,7 @@ document.addEventListener('keydown', e => {
   if (DIRS[k]) { e.preventDefault(); nearest(DIRS[k]); }
 });
 document.addEventListener('mousemove', () => { /* chuột vẫn dùng bình thường */ });
-document.addEventListener('focusin', e => { const c = e.target.closest && e.target.closest('.card'); if (c) c.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); });
+document.addEventListener('focusin', e => { if (kbNav) { kbNav = false; return; } const c = e.target.closest && e.target.closest('.card'); if (c) c.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' }); });
 
 if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
