@@ -64,7 +64,21 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
+              signingConfigs {
+                  shared {
+                      def ks = System.getenv('KEYSTORE_PATH')
+                      if (ks && new File(ks).exists()) {
+                          storeFile file(ks)
+                          storePassword 'phimdung'
+                          keyAlias 'phim'
+                          keyPassword 'phimdung'
+                      }
+                  }
+              }
               buildTypes {
+                  debug {
+                      if (System.getenv('KEYSTORE_PATH')) signingConfig signingConfigs.shared
+                  }
                   release { minifyEnabled false }
               }
               compileOptions {
@@ -118,6 +132,7 @@ jobs:
           import android.view.WindowManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceError;
           import android.webkit.WebResourceRequest;
           import android.webkit.WebResourceResponse;
           import android.webkit.WebSettings;
@@ -136,6 +151,11 @@ jobs:
 
           public class MainActivity extends Activity {
               private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
+              // Giao diện được tải từ web của bạn, nên chỉ cần cập nhật file trên GitHub là app tự mới.
+              private static final String REMOTE = "https://manhdungn111-svg.github.io/PHIM-by-Dung-Nguyen/";
+              private static final String REMOTE_HOST = "manhdungn111-svg.github.io";
+              private static final String ASSET_HOST = "appassets.androidplatform.net";
+              private boolean fellBack = false;
 
               private FrameLayout root;
               private WebView web;
@@ -213,6 +233,28 @@ jobs:
 
                   web.setWebViewClient(new WebViewClient() {
                       @Override
+                      public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                          String h = request.getUrl().getHost();
+                          return !(REMOTE_HOST.equals(h) || ASSET_HOST.equals(h));
+                      }
+
+                      @Override
+                      public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                          if (request.isForMainFrame() && !fellBack) {
+                              fellBack = true;
+                              view.loadUrl(HOME);
+                          }
+                      }
+
+                      @Override
+                      public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse resp) {
+                          if (request.isForMainFrame() && resp.getStatusCode() >= 400 && !fellBack) {
+                              fellBack = true;
+                              view.loadUrl(HOME);
+                          }
+                      }
+
+                      @Override
                       public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                           WebResourceResponse r = loader.shouldInterceptRequest(request.getUrl());
                           if (r != null) return r;
@@ -252,7 +294,7 @@ jobs:
                   });
 
                   if (state != null) web.restoreState(state);
-                  else web.loadUrl(HOME);
+                  else web.loadUrl(REMOTE);
                   web.requestFocus();
               }
 
@@ -336,6 +378,17 @@ jobs:
           except Exception as e:
               print('banner fallback',e); shutil.copy('logo.png',d)
           EOF_PY
+      - name: Chuan bi khoa ky app
+        env:
+          KS: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/phim.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/phim.jks" >> "$GITHUB_ENV"
+            echo "Da dung khoa ky co dinh"
+          else
+            echo "Chua co khoa ky co dinh, dung khoa tam"
+          fi
       - name: Build APK
         working-directory: android
         run: gradle assembleDebug --no-daemon
