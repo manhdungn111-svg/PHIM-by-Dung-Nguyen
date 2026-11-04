@@ -993,6 +993,7 @@ const fmt = s => {
 };
 function loadPos() { return getPos()[movie.slug] || null; }
 let live = null, liveFocus = null;
+const setLiveMode = on => { try { window.KKAndroid && window.KKAndroid.setLive(on); } catch (e) {} };
 function savePos() {
   if (live || !movie || !vid.duration) return;
   const pos = getPos();
@@ -1000,9 +1001,9 @@ function savePos() {
   LS.set(ukey('pos'), pos);
   pushHist(movie, { srv, ep: epIdx, t: vid.currentTime });
 }
-function toast(t) {
+function toast(t, ms) {
   const el = $('#toast'); el.textContent = t; el.classList.add('show');
-  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 1200);
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), ms || 1200);
 }
 function showUI() {
   ui.classList.remove('hide');
@@ -1010,7 +1011,7 @@ function showUI() {
   hideT = setTimeout(() => { if (!vid.paused) { ui.classList.add('hide'); pwrap.focus(); } }, 4000);
 }
 function startEp(s, i) {
-  live = null; player.classList.remove('islive');
+  live = null; player.classList.remove('islive'); setLiveMode(false);
   $('#pvT').textContent = 'Tập trước'; $('#nxT').textContent = 'Tập sau';
   const e = servers[s] && servers[s].server_data[i];
   if (!e) return;
@@ -1055,6 +1056,7 @@ function startLive(list, i) {
   const ch = list[i];
   if (!ch) return;
   live = { list, idx: i };
+  setLiveMode(true);
   player.classList.add('open', 'islive');
   $('#pTitle').textContent = ch.name;
   $('#pSub').textContent = 'Trực tiếp' + (ch.group ? ' · ' + ch.group : '');
@@ -1066,7 +1068,7 @@ function startLive(list, i) {
   if (window.Hls && Hls.isSupported()) {
     hls = new Hls({ liveSyncDurationCount: 3 });
     hls.loadSource(ch.url); hls.attachMedia(vid);
-    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { $('#spin').classList.remove('on'); toast('Kênh này không phát được. Thử kênh khác'); } });
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { $('#spin').classList.remove('on'); toast(d.type === Hls.ErrorTypes.NETWORK_ERROR ? 'Không tải được kênh: link chết hoặc bị trình duyệt chặn. Thử kênh khác' : 'Kênh này không phát được. Thử kênh khác', 4500); const code = d.response && d.response.code ? ' ' + d.response.code : ''; $('#pSub').textContent = 'Lỗi: ' + d.details + code; } });
   } else vid.src = ch.url;
   vid.play().catch(() => {});
   syncFull(); syncPlay(); showUI();
@@ -1074,6 +1076,7 @@ function startLive(list, i) {
 }
 function closePlayer() {
   savePos();
+  setLiveMode(false);
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   teardown();
   if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
@@ -1186,13 +1189,14 @@ function nearest(dir) {
     const b = el.getBoundingClientRect();
     const bx = b.left + b.width / 2, by = b.top + b.height / 2;
     const dx = bx - ax, dy = by - ay;
-    if ((dir === 'left' || dir === 'right') ? Math.abs(dy) > a.height * 1.2 : Math.abs(dy) > innerHeight * 2) continue;
+    if ((dir === 'left' || dir === 'right') ? Math.abs(dy) > Math.max(a.height, b.height) * 1.2 : Math.abs(dy) > innerHeight * 2) continue;
     let p, q;
-    if (dir === 'left') { if (b.right > a.left + 4 && dx >= -2) continue; if (dx >= 0) continue; p = -dx; q = Math.abs(dy); }
-    if (dir === 'right') { if (dx <= 0) continue; p = dx; q = Math.abs(dy); }
-    if (dir === 'up') { if (dy >= 0) continue; p = -dy; q = Math.abs(dx); }
-    if (dir === 'down') { if (dy <= 0) continue; p = dy; q = Math.abs(dx); }
-    const score = p + q * (dir === 'left' || dir === 'right' ? 3 : 1.5);
+    const mw = Math.min(a.width, b.width) * 0.5, mh = Math.min(a.height, b.height) * 0.5;
+    if (dir === 'left') { if (-dx <= mw) continue; p = -dx; q = Math.abs(dy); }
+    else if (dir === 'right') { if (dx <= mw) continue; p = dx; q = Math.abs(dy); }
+    else if (dir === 'up') { if (-dy <= mh) continue; p = -dy; q = Math.abs(dx); }
+    else { if (dy <= mh) continue; p = dy; q = Math.abs(dx); }
+    const score = p + q * (dir === 'left' || dir === 'right' ? 3 : 2);
     if (score < bs) { bs = score; best = el; }
   }
   if (best) {
@@ -1238,6 +1242,12 @@ document.addEventListener('focusin', e => { if (kbNav) { kbNav = false; return; 
 if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+window.kkBack = () => {
+  if (player.classList.contains('open')) { closePlayer(); return true; }
+  if (detail.classList.contains('open')) { closeDetail(); return true; }
+  if (current !== 'home') { go('home'); return true; }
+  return false;
+};
 refreshAvatar();
 go('home');
 })();
