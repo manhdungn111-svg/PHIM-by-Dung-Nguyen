@@ -243,6 +243,7 @@ select.fld{appearance:none;-webkit-appearance:none}
       <div class="top">
         <button class="cb f" id="bBack" aria-label="Quay lại"><svg viewBox="0 0 24 24"><path d="M15.5 4L7 12l8.5 8 1.5-1.6L10.2 12l6.8-6.4z"/></svg></button>
         <div style="min-width:0"><h2 id="pTitle"></h2><small id="pSub"></small></div>
+        <button class="cb txt f" id="bAlt" hidden style="margin-left:auto"><span>Trình phát nhúng</span></button>
       </div>
       <div class="bot">
         <div class="seekrow">
@@ -280,6 +281,31 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 
 /* ---------- API ---------- */
 const cache = new Map();
+const NC = 'https://phim.nguonc.com';
+async function getJson(url) {
+  if (cache.has(url)) return cache.get(url);
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const d = await r.json();
+  cache.set(url, d);
+  return d;
+}
+const ncNorm = m => ({ name: m.name, slug: m.slug, origin_name: m.original_name, thumb_url: m.thumb_url, poster_url: m.poster_url, quality: m.quality, episode_current: m.current_episode, src: 'nc' });
+const ncList = async path => ((await getJson(NC + path)).items || []).filter(m => m && m.slug).map(ncNorm);
+function ncDetail(d) {
+  const m = (d && d.movie) || d || {};
+  const cats = Object.values(m.category || {});
+  const pick = key => {
+    const g = cats.find(c => c && c.group && String(c.group.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase() === key);
+    return g && Array.isArray(g.list) ? g.list.map(x => ({ name: x.name })) : [];
+  };
+  const split = v => Array.isArray(v) ? v : String(v || '').split(',').map(x => x.trim()).filter(Boolean);
+  const yr = pick('nam')[0];
+  const mv = { name: m.name, origin_name: m.original_name, slug: m.slug, thumb_url: m.thumb_url, poster_url: m.poster_url, content: m.description, category: pick('the loai'), country: pick('quoc gia'), director: split(m.director), actor: split(m.casts), quality: m.quality, lang: m.language, time: m.time, episode_current: m.current_episode, year: yr ? yr.name : '', src: 'nc' };
+  const eps = (d && d.episodes) || m.episodes || [];
+  const sv = eps.map(s => ({ server_name: s.server_name || s.name || 'Server', server_data: (s.items || s.server_data || []).map(i => ({ name: i.name, link_m3u8: i.m3u8 || i.link_m3u8 || '', link_embed: i.embed || i.link_embed || '' })) })).filter(s => s.server_data.length);
+  return { movie: mv, servers: sv };
+}
 async function api(path) {
   if (cache.has(path)) return cache.get(path);
   const r = await fetch(API + path);
@@ -311,7 +337,7 @@ function card(m) {
       ${m.episode_current ? `<div class="ep">${esc(m.episode_current)}</div>` : ''}
     </div>
     <div class="t">${esc(m.name)}</div><div class="o">${esc(m.origin_name || '')}${m.year ? ' · ' + m.year : ''}</div>`;
-  b.onclick = () => openDetail(m.slug);
+  b.onclick = () => openDetail(m.slug, m.src);
   return b;
 }
 function row(title, items) {
@@ -373,7 +399,7 @@ const getFav = () => getList('fav');
 const getHist = () => getList('hist');
 const getLater = () => getList('later');
 const getPos = () => { const v = LS.get(ukey('pos'), {}); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
-const summary = m => ({ slug: m.slug, name: m.name, origin_name: m.origin_name, thumb_url: m.thumb_url, poster_url: m.poster_url, year: m.year, quality: m.quality, episode_current: m.episode_current });
+const summary = m => ({ slug: m.slug, name: m.name, origin_name: m.origin_name, thumb_url: m.thumb_url, poster_url: m.poster_url, year: m.year, quality: m.quality, episode_current: m.episode_current, src: m.src });
 const inList = (n, slug) => getList(n).some(m => m.slug === slug);
 const isFav = slug => inList('fav', slug);
 const isLater = slug => inList('later', slug);
@@ -572,7 +598,7 @@ async function home(my) {
   main.append(hero);
   const hs = getHist();
   if (hs.length) main.append(row('Tiếp tục xem', hs.slice(0, 18)));
-  const defs = [['Phim mới cập nhật', () => latest(1)], ['Phim lẻ', () => list('phim-le', 1, 18)], ['Phim bộ', () => list('phim-bo', 1, 18)], ['Hoạt hình', () => list('hoat-hinh', 1, 18)], ['TV Shows', () => list('tv-shows', 1, 18)]];
+  const defs = [['Phim mới cập nhật', () => latest(1)], ['Phim lẻ', () => list('phim-le', 1, 18)], ['Phim bộ', () => list('phim-bo', 1, 18)], ['Hoạt hình', () => list('hoat-hinh', 1, 18)], ['TV Shows', () => list('tv-shows', 1, 18)], ['NguonC · Mới cập nhật', () => ncList('/api/films/phim-moi-cap-nhat?page=1')], ['NguonC · Phim lẻ', () => ncList('/api/films/danh-sach/phim-le?page=1')], ['NguonC · Phim bộ', () => ncList('/api/films/danh-sach/phim-bo?page=1')], ['NguonC · Hoạt hình', () => ncList('/api/films/danh-sach/hoat-hinh?page=1')]];
   const holders = defs.map(([t]) => { const s = skeletonRow(t); main.append(s); return s; });
   let heroItems = [], failed = 0;
   await Promise.all(defs.map(async ([t, fn], i) => {
@@ -895,20 +921,25 @@ $$('.nav').forEach(n => n.onclick = () => go(n.dataset.go));
 
 /* ---------- Chi tiết phim ---------- */
 let movie = null, servers = [], srv = 0, epIdx = 0, lastFocus = null;
-async function openDetail(slug) {
+async function openDetail(slug, src) {
   lastFocus = document.activeElement;
   detail.classList.add('open');
   detail.scrollTop = 0;
   detail.innerHTML = '<div class="msg" style="padding-top:20rem">Đang tải...</div>';
   try {
-    const d = await api('/phim/' + slug);
-    movie = d.movie;
-    servers = (d.episodes || []).filter(s => s.server_data && s.server_data.length);
+    if (src === 'nc') {
+      const n = ncDetail(await getJson(NC + '/api/film/' + encodeURIComponent(slug)));
+      movie = n.movie; servers = n.servers;
+    } else {
+      const d = await api('/phim/' + slug);
+      movie = d.movie; movie.src = 'kk';
+      servers = (d.episodes || []).filter(s => s.server_data && s.server_data.length);
+    }
     srv = 0;
     renderDetail();
   } catch (e) {
     detail.innerHTML = '';
-    const b = errorBox(() => openDetail(slug));
+    const b = errorBox(() => openDetail(slug, src));
     b.style.paddingTop = '18rem';
     detail.append(b);
     $('button', b).focus();
@@ -1024,30 +1055,56 @@ function startEp(s, i) {
   $('#bPrev').hidden = i === 0;
   $('#bNext').hidden = i >= servers[s].server_data.length - 1;
   teardown();
-  const m3u8 = e.link_m3u8;
-  if (m3u8) {
-    vid.hidden = false;
-    $('#spin').classList.add('on');
-    if (window.Hls && Hls.isSupported()) {
-      hls = new Hls({ maxBufferLength: 40 });
-      hls.loadSource(m3u8); hls.attachMedia(vid);
-      hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { $('#spin').classList.remove('on'); toast('Lỗi phát. Thử nguồn khác'); } });
-    } else vid.src = m3u8;
-    vid.addEventListener('loadedmetadata', () => { if (startAt > 5) vid.currentTime = startAt; }, { once: true });
-    vid.play().catch(() => {});
-  } else if (e.link_embed) {
-    vid.hidden = true;
-    iframe = document.createElement('iframe');
-    iframe.src = e.link_embed; iframe.allow = 'autoplay; fullscreen; picture-in-picture'; iframe.allowFullscreen = true;
-    pwrap.prepend(iframe);
-    toast('Nguồn nhúng: không dùng được thanh tua');
-  } else toast('Tập này chưa có nguồn phát');
+  curEntry = e;
+  if (e.link_m3u8) showHls(e, startAt);
+  else if (e.link_embed) { showEmbed(e); toast('Nguồn nhúng: không dùng được thanh tua'); }
+  else toast('Tập này chưa có nguồn phát');
+  syncAlt();
   syncFull();
   syncPlay();
   showUI();
   pwrap.focus();
 }
+let curEntry = null, curMode = '', hintT = null;
+function syncAlt() {
+  const both = !!(curEntry && curEntry.link_m3u8 && curEntry.link_embed);
+  $('#bAlt').hidden = !both;
+  $('#bAlt span').textContent = curMode === 'embed' ? 'Trình phát chính' : 'Trình phát nhúng';
+}
+function showEmbed(e) {
+  teardown();
+  setLiveMode(false);
+  vid.hidden = true;
+  $('#spin').classList.remove('on');
+  iframe = document.createElement('iframe');
+  iframe.src = e.link_embed; iframe.allow = 'autoplay; fullscreen; picture-in-picture'; iframe.allowFullscreen = true;
+  pwrap.prepend(iframe);
+  curMode = 'embed';
+  syncAlt();
+}
+function showHls(e, startAt) {
+  teardown();
+  curMode = 'hls';
+  vid.hidden = false;
+  $('#spin').classList.add('on');
+  if (movie && movie.src === 'nc') setLiveMode(true);
+  const fail = () => {
+    $('#spin').classList.remove('on');
+    if (e.link_embed) { toast('Chuyển sang trình phát nhúng', 3000); showEmbed(e); }
+    else toast('Lỗi phát. Thử nguồn khác', 3500);
+  };
+  if (window.Hls && Hls.isSupported()) {
+    hls = new Hls({ maxBufferLength: 40 });
+    hls.loadSource(e.link_m3u8); hls.attachMedia(vid);
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) fail(); });
+  } else { vid.src = e.link_m3u8; vid.onerror = fail; }
+  vid.addEventListener('loadedmetadata', () => { if (startAt > 5) vid.currentTime = startAt; }, { once: true });
+  vid.play().catch(() => {});
+  if (e.link_embed) hintT = setTimeout(() => { if (curMode === 'hls' && !(vid.currentTime > 0)) toast('Chưa lên hình? Bấm "Trình phát nhúng" ở góc trên bên phải', 5000); }, 12000);
+  syncAlt();
+}
 function teardown() {
+  vid.onerror = null; clearTimeout(hintT);
   if (hls) { hls.destroy(); hls = null; }
   if (iframe) { iframe.remove(); iframe = null; }
   vid.pause(); vid.removeAttribute('src'); vid.load();
@@ -1138,6 +1195,7 @@ $('#seek').addEventListener('click', e => {
   if (vid.duration) vid.currentTime = (e.clientX - r.left) / r.width * vid.duration;
   showUI();
 });
+$('#bAlt').onclick = () => { if (!curEntry) return; if (curMode === 'embed') showHls(curEntry, 0); else showEmbed(curEntry); showUI(); };
 $('#bPlay').onclick = toggle;
 $('#bBack10').onclick = () => skip(-10);
 $('#bFwd10').onclick = () => skip(10);
